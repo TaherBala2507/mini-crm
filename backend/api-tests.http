@@ -1,0 +1,212 @@
+### Mini-CRM API Tests
+### Use REST Client extension in VS Code or similar tools
+
+@baseUrl = http://localhost:5000/api
+@accessToken = 
+@refreshToken = 
+
+### ============================================
+### AUTHENTICATION ENDPOINTS
+### ============================================
+
+### 1. Register Organization & Super Admin
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "organizationName": "Acme Corp",
+  "organizationDomain": "acme",
+  "name": "John Doe",
+  "email": "john@acme.test",
+  "password": "Passw0rd!"
+}
+
+### 2. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@acme.test",
+  "password": "Passw0rd!"
+}
+
+### 3. Get Current User Profile
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 4. Refresh Token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 5. Forgot Password
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "john@acme.test"
+}
+
+### 6. Reset Password
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "your-reset-token-here",
+  "password": "NewPassw0rd!"
+}
+
+### 7. Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### ============================================
+### LEAD MANAGEMENT ENDPOINTS
+### ============================================
+
+### 1. Create Lead
+# @name createLead
+POST {{baseUrl}}/leads
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Enterprise Software Solution",
+  "company": "TechCorp Inc",
+  "contactName": "Jane Smith",
+  "email": "jane@techcorp.com",
+  "phone": "+1-555-0123",
+  "status": "new",
+  "source": "website",
+  "value": 50000,
+  "notes": "Interested in our enterprise package"
+}
+
+### 2. Get All Leads (with pagination)
+GET {{baseUrl}}/leads?page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+### 3. Get All Leads (with filters)
+GET {{baseUrl}}/leads?status=new&source=website&page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+### 4. Get All Leads (with search)
+GET {{baseUrl}}/leads?search=TechCorp&page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+### 5. Get All Leads (with sorting)
+GET {{baseUrl}}/leads?sortBy=createdAt&sortOrder=desc&page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+### 6. Get All Leads (filter by owner)
+GET {{baseUrl}}/leads?ownerUserId=USER_ID_HERE&page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+### 7. Get Lead by ID
+GET {{baseUrl}}/leads/LEAD_ID_HERE
+Authorization: Bearer {{accessToken}}
+
+### 8. Update Lead
+PUT {{baseUrl}}/leads/LEAD_ID_HERE
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Enterprise Software Solution - Updated",
+  "status": "contacted",
+  "value": 75000,
+  "notes": "Had initial call, very interested"
+}
+
+### 9. Assign Lead to User
+PATCH {{baseUrl}}/leads/LEAD_ID_HERE/assign
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "ownerUserId": "USER_ID_HERE"
+}
+
+### 10. Delete Lead (Soft Delete)
+DELETE {{baseUrl}}/leads/LEAD_ID_HERE
+Authorization: Bearer {{accessToken}}
+
+### ============================================
+### TESTING SCENARIOS
+### ============================================
+
+### Scenario 1: Agent tries to view all leads (should only see own leads)
+# Login as Agent first, then:
+GET {{baseUrl}}/leads
+Authorization: Bearer {{accessToken}}
+
+### Scenario 2: Agent tries to view another agent's lead (should fail)
+GET {{baseUrl}}/leads/OTHER_AGENT_LEAD_ID
+Authorization: Bearer {{accessToken}}
+
+### Scenario 3: Manager views all leads (should see all)
+# Login as Manager first, then:
+GET {{baseUrl}}/leads
+Authorization: Bearer {{accessToken}}
+
+### Scenario 4: Agent tries to assign lead to someone else (should fail)
+PATCH {{baseUrl}}/leads/LEAD_ID_HERE/assign
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "ownerUserId": "ANOTHER_USER_ID"
+}
+
+### Scenario 5: Manager assigns lead to agent (should succeed)
+# Login as Manager first, then:
+PATCH {{baseUrl}}/leads/LEAD_ID_HERE/assign
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "ownerUserId": "AGENT_USER_ID"
+}
+
+### ============================================
+### ERROR TESTING
+### ============================================
+
+### Test 1: Create lead with invalid data
+POST {{baseUrl}}/leads
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "email": "invalid-email"
+}
+
+### Test 2: Access without authentication
+GET {{baseUrl}}/leads
+
+### Test 3: Access with invalid token
+GET {{baseUrl}}/leads
+Authorization: Bearer invalid-token-here
+
+### Test 4: Get non-existent lead
+GET {{baseUrl}}/leads/000000000000000000000000
+Authorization: Bearer {{accessToken}}
+
+### Test 5: Update with invalid ID
+PUT {{baseUrl}}/leads/invalid-id
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Updated Title"
+}
